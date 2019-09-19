@@ -1,0 +1,187 @@
+.main {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  @include flexbox();
+  @include justify-content(space-between);
+
+  .left-girls {
+    position: relative;
+    width: 50vw;
+    .video {
+      width: 100%;
+      height: 100%;
+    }
+  }
+  .right-girls {
+    padding: 100px 30px 250px 30px;
+    width: 35vw;
+    @include grid();
+    @include grid-template-columns(repeat(4, 1fr));
+    grid-gap: 5px;
+
+    .image {
+      cursor: pointer;
+      @include grid();
+
+      &:last-child {
+        @include grid-column(3, 4);
+        transform: translate(-50%);
+      }
+
+      img {
+        border-radius: 3px;
+
+        &:hover {
+          border: 2px solid goldenrod;
+        }
+      }
+    }
+  }
+
+  .game {
+    @include flexbox();
+    @include flex-direction(column);
+    @include justify-content(space-between);
+    position: relative;
+    &:before {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      background: rgb(73, 69, 69);
+      height: 8px;
+      width: 100%;
+    }
+    &-details {
+      width: 100%;
+      height: 30%;
+
+      .back {
+        display: block;
+        width: fit-content;
+        margin-left: 10px;
+        margin-top: 10px;
+        font-size: 16px;
+        border-right: 1px solid white;
+        padding-right: 10px;
+      }
+      .cash {
+        position: relative;
+        margin: 25px 180px;
+        padding: 0 10px;
+        background: #3d1512;
+        border-radius: 20px;
+        border: 3px solid #98733f;
+        @include flexbox();
+        @include justify-content(space-between);
+
+        &-to-winner,
+        &-left,
+        &-right {
+          padding: 5px 0;
+          @include flexbox();
+          @include flex-direction(column);
+          img {
+            width: 30px;
+            margin: -5px;
+          }
+        }
+        &-to-winner {
+          position: absolute;
+          left: 50%;
+          top: 0;
+          transform: translate(-50%);
+          visibility: hidden
+        }
+        &-center {
+          @include flexbox();
+          @include align-items(center);
+          border-radius: 50%;
+          border: 2px solid #98733f;
+          padding: 0 100px;
+        }
+      }
+    }
+    &-girls {
+      width: 100%;
+      height: 85%;
+      @include flexbox();
+      &:before {
+        content: "";
+        z-index: 100;
+        position: absolute;
+        left: 0;
+        bottom: 8px;
+        height: 12px;
+        width: 40%;
+        background: #f5ac45;
+      }
+      &:after {
+        content: "";
+        z-index: 100;
+        position: absolute;
+        right: 0;
+        bottom: 8px;
+        height: 12px;
+        width: 40%;
+        background: #f5ac45;
+      }
+      .left-girl {
+        position: relative;
+        width: 50vw;
+        .video {
+          transform: rotateY(180deg);
+        }
+        
+      }
+      .right-girl {
+        position: relative;
+        width: 50vw;
+      }
+    }
+    &-rsp {
+      @include flexbox();
+      position: absolute;
+      bottom: 120px;
+      left: 50%;
+      transform: translate(-50%);
+      &-box {
+        width: 120px;
+        height: 120px;
+        margin: 0 20px;
+        border: 5px solid #98733f;
+      }
+    }
+    &-options {
+      position: absolute;
+      left: 30px;
+      top: 40px;
+
+      &-box {
+        width: 70px;
+        height: 70px;
+        margin: 10px 0;
+        border: 3px solid #98733f;
+      }
+    }
+    &-chat {
+      position: absolute;
+      left: 30px;
+      bottom: 40px;
+
+      &-box {
+        width: 70px;
+        height: 70px;
+        border: 3px solid #98733f;
+      }
+    }
+  }
+
+  .footer {
+    position: absolute;
+    bottom: 5%;
+    left: 50%;
+    transform: translate(-50%);
+  }
+}
