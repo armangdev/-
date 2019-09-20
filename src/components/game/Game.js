@@ -1,89 +1,97 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
 import PropTypes from "prop-types";
+import { Link } from "react-router-dom";
+
 import {
   rsp,
   rspWinner,
-  disableButtons,
+  hideButtons,
   setIntervalID,
   clearIntervalID,
-  setWaiting,
-  clearWaiting,
+  waitingFull,
   setReady,
-  clearReady
+  clearReady,
+  clearReadyBoth,
+  playingFull,
+  clearPlaying,
+  clearPlayingBoth
 } from "../../actions/game";
-import { Link } from "react-router-dom";
 
 class Game extends Component {
   componentDidMount() {
     this.bothWaiting();
-    //just testing
+    //just for testing
     this.props.setReady("rightGirl");
   }
+
   componentWillUnmount() {
     this.props.clearIntervalID("leftGirl", this.props.intervalID["leftGirl"]);
     this.props.clearIntervalID("rightGirl", this.props.intervalID["rightGirl"]);
   }
 
+  //_____________________waiting_____________________
+  waitingPart = dirGirl => {
+    const start = this.props[dirGirl].inGameMovement.waitLong.start;
+    const duration = this.props[dirGirl].inGameMovement.waitLong.duration;
+    const prevIntervalID = this.props.intervalID[dirGirl];
+    this.props.waitingFull(dirGirl, start, duration, prevIntervalID);
+  };
+
+  bothWaiting = () => {
+    this.waitingPart("leftGirl");
+    this.waitingPart("rightGirl");
+  };
+
   submitRSP = async choice => {
     await this.props.setReady("leftGirl");
     const left_is_ready = this.props.ready.leftGirl;
     const right_is_ready = this.props.ready.rightGirl;
-    console.log(left_is_ready, right_is_ready);
+
+    //both ready
     if (left_is_ready && right_is_ready) {
       setTimeout(() => {
-        this.props.clearReady("leftGirl");
-        this.props.clearReady("rightGirl");
-        this.props.disableButtons();
-        this.playingPart(choice, "leftGirl");
-        this.playingPart("p", "rightGirl");
+        this.bothPlaying(choice);
       }, 500);
     }
   };
+  //@@@@@@@@@@@@@@@@@@@@@@@@@@@@END@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-  waitingPart = dirGirl => {
-    const video = document.querySelector(`#${dirGirl}`);
-    const start = this.props[dirGirl].inGameMovement.waitLong.start;
-    const duration = this.props[dirGirl].inGameMovement.waitLong.duration;
-    this.props.setWaiting(dirGirl, start, duration);
-    this.props.clearIntervalID(dirGirl, this.props.intervalID[dirGirl]);
-    this.props.setIntervalID(dirGirl, video, start, duration);
-  };
-  bothWaiting = () => {
-    this.waitingPart("leftGirl");
-    this.waitingPart("rightGirl");
-  }
-
-  playingPart = async (choice, dirGirl) => {
-    this.props.clearWaiting(dirGirl);
-    this.props.clearIntervalID(dirGirl, this.props.intervalID[dirGirl]);
-    const video = document.querySelector(`#${dirGirl}`);
-    await video.pause();
+  //__________________________playing__________________________
+  playingPart = async dirGirl => {
     const girl = this.props[dirGirl];
     const {
       inGameMovement: {
         playing: { start, duration }
       }
     } = girl;
-    console.log(dirGirl, duration);
-    video.currentTime = start;
-    await video.play();
-    setTimeout(async () => {
-      await video.pause();
-      this.handsCombinationPart(choice, girl, dirGirl);
-    }, duration * 1000);
+    this.props.setIntervalID(dirGirl, start, duration);
   };
 
+  bothPlaying = async (leftChoice, rightChoice = "p") => {
+    await this.props.playingFull(this.props.intervalID);
+    this.playingPart("leftGirl");
+    this.playingPart("rightGirl");
+    // setTimeout(() => {
+    //   this.handsCombinationPart(choice, girl, dirGirl);
+    // }, duration * 1000);
+  };
+  //@@@@@@@@@@@@@@@@@@@@@@@@@@@@END@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+  //____________________hands-shake____________________
   handsCombinationPart = async (choice, girl, dirGirl) => {
+    //hands shake partrspWinner
     const {
       inGameMovement: { r, s, p }
     } = girl;
     const { start, duration } = eval(choice);
-    console.log(dirGirl, duration);
     this.props.rsp(dirGirl, choice, girl.inGameMovement.waitLong);
     const video = document.getElementById(dirGirl);
     video.currentTime = start;
+
     await video.play();
+
+    //stop hands shake
     setTimeout(async () => {
       await video.pause();
       const leftChoice = this.props.choices.leftGirl;
@@ -91,6 +99,8 @@ class Game extends Component {
       this.props.rspWinner(leftChoice, rightChoice);
     }, duration * 1000);
   };
+  //@@@@@@@@@@@@@@@@@@@@@@@@@@@@END@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
   render() {
     return (
       <section className="game">
@@ -223,6 +233,7 @@ class Game extends Component {
     );
   }
 }
+
 Game.propTypes = {
   //variables
   leftGirl: PropTypes.object,
@@ -232,18 +243,23 @@ Game.propTypes = {
   intervalID: PropTypes.object,
   waiting: PropTypes.object,
   ready: PropTypes.object,
+  playing: PropTypes.object,
   winner: PropTypes.string,
 
   //functions
   rsp: PropTypes.func.isRequired,
   rspWinner: PropTypes.func.isRequired,
-  disableButtons: PropTypes.func.isRequired,
+  hideButtons: PropTypes.func.isRequired,
   setIntervalID: PropTypes.func.isRequired,
   clearIntervalID: PropTypes.func.isRequired,
-  setWaiting: PropTypes.func.isRequired,
-  clearWaiting: PropTypes.func.isRequired,
+  waitingFull: PropTypes.func.isRequired,
+
   setReady: PropTypes.func.isRequired,
-  clearReady: PropTypes.func.isRequired
+  clearReady: PropTypes.func.isRequired,
+  clearReadyBoth: PropTypes.func.isRequired,
+  playingFull: PropTypes.func.isRequired,
+  clearPlaying: PropTypes.func.isRequired,
+  clearPlayingBoth: PropTypes.func.isRequired
 };
 
 const mapStateToProps = state => {
@@ -255,7 +271,8 @@ const mapStateToProps = state => {
     winner: state.game.winner,
     intervalID: state.game.intervalID,
     waiting: state.game.waiting,
-    ready: state.game.ready
+    ready: state.game.ready,
+    playing: state.game.playing
   };
 };
 
@@ -264,12 +281,16 @@ export default connect(
   {
     rsp,
     rspWinner,
-    disableButtons,
+    hideButtons,
     setIntervalID,
     clearIntervalID,
-    setWaiting,
-    clearWaiting,
+    waitingFull,
+
     setReady,
-    clearReady
+    clearReady,
+    clearReadyBoth,
+    playingFull,
+    clearPlaying,
+    clearPlayingBoth
   }
 )(Game);

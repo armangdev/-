@@ -1,23 +1,22 @@
 // import uuid from "uuid";
 import {
   GIRL_CHOSEN,
-  CHOICE,
   WINNER,
   SET_INTERVAL_ID,
   CLEAR_INTERVAL_ID,
+  SET_CHOICE,
+  CLEAR_CHOICE,
   SET_WAITING,
   CLEAR_WAITING,
   SET_READY,
-  CLEAR_READY
+  CLEAR_READY,
+  SET_PLAYING,
+  CLEAR_PLAYING,
 } from "./constants";
 
 //________________Intervals__________________
-export const setIntervalID = (
-  dirGirl,
-  video,
-  start,
-  duration
-) => async dispatch => {
+export const setIntervalID = (dirGirl, start, duration) => async dispatch => {
+  const video = document.querySelector(`#${dirGirl}`);
   video.muted = true;
   video.currentTime = start;
   await video.play();
@@ -33,30 +32,46 @@ export const setIntervalID = (
   });
 };
 
-export const clearIntervalID = (dirGirl, previous) => dispatch => {
+export const clearIntervalID = (dirGirl, prevIntervalID) => dispatch => {
   const intervalObj = {
-    [dirGirl]: clearInterval(previous)
+    [dirGirl]: clearInterval(prevIntervalID)
   };
   dispatch({
     type: CLEAR_INTERVAL_ID,
     payload: intervalObj
   });
 };
-//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+export const clearIntervalIDBoth = intevalID => dispatch => {
+  const intervalObj = {
+    leftGirl: clearInterval(intevalID.leftGirl),
+    rightGirl: clearInterval(intevalID.rightGirl)
+  };
+  dispatch({
+    type: CLEAR_INTERVAL_ID,
+    payload: intervalObj
+  });
+};
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@END@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 
 //_______________WAITING______________
+export const waitingFull = (
+  dirGirl,
+  start,
+  duration,
+  prevIntervalID
+) => dispatch => {
+  dispatch(setWaiting(dirGirl, start, duration));
+  dispatch(clearIntervalID(dirGirl, prevIntervalID));
+  dispatch(setIntervalID(dirGirl, start, duration));
+};
 export const setWaiting = (dirGirl, start, duration) => dispatch => {
   dispatch({
     type: SET_WAITING,
     payload: { [dirGirl]: { start, duration } }
   });
 };
-export const clearWaiting = dirGirl => dispatch => {
-  dispatch({
-    type: CLEAR_WAITING,
-    payload: { [dirGirl]: null }
-  });
-};
+
 export const clearWaitingBoth = () => dispatch => {
   dispatch({
     type: CLEAR_WAITING,
@@ -66,7 +81,8 @@ export const clearWaitingBoth = () => dispatch => {
     }
   });
 };
-//@@@@@@@@@@@@@@@@@@@@@@@@@@@
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@END@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 
 //_______________READY______________
 export const setReady = dirGirl => dispatch => {
@@ -91,37 +107,101 @@ export const clearReadyBoth = () => dispatch => {
     }
   });
 };
-// ____________________RSP_________________________
-export const rsp = (dirGirl, choice, waitLong) => dispatch => {
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@END@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+//_______________CHOICE______________
+export const setChoice = dirGirl => dispatch => {
   dispatch({
-    type: CHOICE,
-    payload: { [dirGirl]: choice }
+    type: SET_CHOICE,
+    payload: { [dirGirl]: true }
   });
-  //happens when both girls finish playing and someone is winner
+};
+
+export const clearChoice = dirGirl => dispatch => {
+  dispatch({
+    type: CLEAR_CHOICE,
+    payload: { [dirGirl]: null }
+  });
+};
+
+export const clearChoiceBoth = () => dispatch => {
+  dispatch({
+    type: CLEAR_CHOICE,
+    payload: {
+      leftGirl: null,
+      rightGirl: null
+    }
+  });
+};
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@END@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+//_______________PLAYING______________
+export const playingFull = intervalID => dispatch => {
+  //clear
+  dispatch(clearReadyBoth());
+  dispatch(clearWaitingBoth());
+  dispatch(clearIntervalIDBoth(intervalID));
+  dispatch(hideButtons());
+
+  //set
+  dispatch(setPlayingBoth());
+};
+
+export const setPlayingBoth = () => dispatch => {
+  dispatch({
+    type: SET_PLAYING,
+    payload: {
+      leftGirl: true,
+      rightGirl: true
+    }
+  });
+};
+export const clearPlaying = dirGirl => dispatch => {
+  dispatch({
+    type: CLEAR_PLAYING,
+    payload: { [dirGirl]: null }
+  });
+};
+
+export const clearPlayingBoth = () => dispatch => {
+  dispatch({
+    type: CLEAR_PLAYING,
+    payload: {
+      leftGirl: null,
+      rightGirl: null
+    }
+  });
+};
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@END@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+// ____________________RSP_________________________
+
+export const finishHandsPart = (dirGirl, waitLong) => dispatch => {
+  const { start, duration } = waitLong;
   setTimeout(() => {
     dispatch({
-      type: CHOICE,
+      type: CLEAR_CHOICE,
       payload: { [dirGirl]: null }
     });
     dispatch({
       type: WINNER,
       payload: null
     });
+    dispatch(setWaiting(dirGirl, start, duration));
 
-    const { start, duration } = waitLong;
-    dispatch(setWaiting(dirGirl, 0, 3));
-
-    dispatch(
-      setIntervalID(
-        dirGirl,
-        document.querySelector(`#${dirGirl}`),
-        start,
-        duration
-      )
-    );
-
+    dispatch(setIntervalID(dirGirl, start, duration));
     dispatch(setReady("rightGirl"));
   }, (2.6 + 1.44) * 1000);
+};
+export const rsp = (dirGirl, choice, waitLong) => dispatch => {
+  dispatch({
+    type: SET_CHOICE,
+    payload: { [dirGirl]: choice }
+  });
+  //happens when both girls finish playing and someone is winner
+  dispatch(finishHandsPart(dirGirl, waitLong));
 };
 
 export const rspWinner = (leftChoice, rightChoice) => dispatch => {
@@ -146,15 +226,11 @@ export const rspWinner = (leftChoice, rightChoice) => dispatch => {
   }
 
   //Cash animation
-  const cash = document.querySelector(".cash-to-winner");
-  cash.classList.add("active");
-
-  setTimeout(async () => {
-    cash.classList.remove("active");
-  }, 2000);
+  dispatch(cashAnimation());
 };
 
-//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@END@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 
 //__________________Others_______________________
 export const chooseGirl = girls => dispatch => {
@@ -163,7 +239,7 @@ export const chooseGirl = girls => dispatch => {
     payload: girls
   });
 };
-export const disableButtons = () => dispatch => {
+export const hideButtons = () => dispatch => {
   const buttons = document.querySelector(".game-rsp");
   buttons.classList.add("disabled");
   buttons.classList.add("invisible");
@@ -172,5 +248,14 @@ export const disableButtons = () => dispatch => {
     buttons.classList.remove("invisible");
   }, (2.6 + 1.44 + 2 + 2) * 1000);
 };
+export const cashAnimation = () => dispatch => {
+  const cash = document.querySelector(".cash-to-winner");
+  cash.classList.add("active");
 
-//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+  setTimeout(() => {
+    cash.classList.remove("active");
+  }, 2000);
+};
+
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@END@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+

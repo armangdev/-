@@ -1,6 +1,7 @@
 import {
   GIRL_CHOSEN,
-  CHOICE,
+  SET_CHOICE,
+  CLEAR_CHOICE,
   WINNER,
   SET_INTERVAL_ID,
   CLEAR_INTERVAL_ID,
@@ -8,6 +9,8 @@ import {
   CLEAR_WAITING,
   SET_READY,
   CLEAR_READY,
+  SET_PLAYING,
+  CLEAR_PLAYING
 } from "../actions/constants";
 import api from "../api/mainApi";
 import { otherStuff } from "../api/shorts";
@@ -36,6 +39,10 @@ const initialState = {
     leftGirl: null,
     rightGirl: null
   },
+  playing: {
+    leftGirl: null,
+    rightGirl: null
+  },
   ready: {
     leftGirl: null,
     rightGirl: null
@@ -56,7 +63,8 @@ export default function(state = initialState, action) {
           rightGirl
         }
       };
-    case CHOICE:
+    case SET_CHOICE:
+    case CLEAR_CHOICE:
       const allChoices = state.choices;
       return {
         ...state,
@@ -90,15 +98,24 @@ export default function(state = initialState, action) {
           ...payload
         }
       };
-      case SET_READY:
-        case CLEAR_READY:
-          return {
-            ...state,
-            ready: {
-              ...state.ready,
-              ...payload
-            }
-          };
+    case SET_READY:
+    case CLEAR_READY:
+      return {
+        ...state,
+        ready: {
+          ...state.ready,
+          ...payload
+        }
+      };
+    case SET_PLAYING:
+    case CLEAR_PLAYING:
+      return {
+        ...state,
+        playing: {
+          ...state.playing,
+          ...payload
+        }
+      };
     default:
       return state;
   }
